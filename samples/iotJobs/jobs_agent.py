@@ -6,6 +6,8 @@ import logging
 import time
 import json
 
+import boto3
+
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
 logging.basicConfig()
@@ -13,7 +15,7 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-logging.getLogger("AWSIoTPythonSDK").setLevel(logging.INFO)
+logging.getLogger("AWSIoTPythonSDK").setLevel(logging.WARNING)
 
 # The MQTT topic templates for job management
 NOTIFY_NEXT_TOPIC = "$aws/things/{thing}/jobs/notify-next"
@@ -48,10 +50,10 @@ class JobClient(object):
         self.__job_version = 1
 
         # TODO: Subscribe to the 'rejected' topics to get error
-        self.__client.subscribe(
+        self.__client.subscribeAsync(
             UPDATE_REJECT_JOB_TOPIC.format(thing=thing_name,job=job_id), 
             1,
-            err_handler
+            messageCallback=err_handler
             )
 
     def __update_job_status(self, status, job_version=1, percent_complete=100):
@@ -68,7 +70,7 @@ class JobClient(object):
 
         logger.debug('Sending job status: %s', status_msg) 
 
-        self.__client.publish(
+        self.__client.publishAsync(
             UPDATE_JOB_TOPIC.format(thing=self.__thing_name),
             json.dumps(status_msg)
         )
@@ -107,11 +109,38 @@ class JobHandler(object):
         if operation == 'CONTAINER_UPDATE':
             return self.execute_container_update
 
+    def __build_status_message(self, status, percent_complete, job_version=1):
+        status_msg = {
+            'status': status,
+            'statusDetails': {
+                'progress': "{}%".format(percent_complete)
+            },
+            'expectedVersion': job_version
+        } 
+        return status_msg
+
+    def __parse_s3_url(self, s3_uri):
+        """
+        Parses the S3 URI and returns a tuple with the bucket name and the key
+        """
+        # TODO: this may be a little fragile; replace with regex?
+        s3_parts = s3_uri.split('/')
+        return (s3_parts[2], '/'.join(s3_parts[3:]))
+
     def execute_container_update(self, job_data):
         """
 
         """
         logger.info("Starting container update...")
+
+        bucket_name, key_name = self.__parse_s3_url(job_data.get('containerUrl'))
+
+        logger.debug("Downloading content from bucket %s...", bucket_name)
+
+        s3 = boto3.resource('s3')
+        s3.Bucket(bucket_name).download_file(key_name, '/tmp/update.tar')
+        
+        logger.info("Finished container update.")
         
 
     def err_handler(self, client, userdata, message):
@@ -136,9 +165,32 @@ class JobHandler(object):
             job_id = job_execution_data.get('jobId', 0)
             job_oper = job_execution_data.get('jobDocument', {}).get('jobType', '')
             logger.debug("Now handling job %s of type %s...", job_id, job_oper)
-            action_handler = self.__select_handler(job_oper)
-            job_client = JobClient(self.__client, self.__thing_name, job_id, action_handler, self.err_handler)
-            job_client.execute_job(job_execution_data)
+            # action_handler = self.__select_handler(job_oper)
+            # job_client = JobClient(self.__client, self.__thing_name, job_id, action_handler, self.err_handler)
+            # job_client.execute_job(job_execution_data)
+            status = self.__build_status_message(JOB_IN_PROGRESS, 50)
+            # action_handler(job_data)
+            self.__client.publishAsync(
+               UPDATE_JOB_TOPIC.format(
+                   thing=self.__thing_name,
+                   job=job_id
+               ),
+               json.dumps(status),
+               1
+            )
+
+            self.execute_container_update(job_execution_data.get('jobDocument', {}))
+
+            complete_status = self.__build_status_message(JOB_SUCCEEDED, 100, 2)
+
+            self.__client.publishAsync(
+               UPDATE_JOB_TOPIC.format(
+                   thing=self.__thing_name,
+                   job=job_id
+               ),
+               json.dumps(complete_status),
+               1
+            ) 
 
 
 def run_jobs_agent(thing_name, endpoint, private_key, certificate_file, root_ca):
@@ -162,12 +214,13 @@ def run_jobs_agent(thing_name, endpoint, private_key, certificate_file, root_ca)
     logger.debug('Connecting to endpoint %s...', endpoint)
     iot_client.connect()
     handler = JobHandler(iot_client, thing_name)
-    iot_client.subscribe(jobs_topic, 1, handler.dispatch_jobs)
+    iot_client.subscribeAsync(jobs_topic, 1, messageCallback=handler.dispatch_jobs)
     logger.info('Listening for jobs.')
+    time.sleep(2)
 
     while True:
         try:
-            time.sleep(1)
+            time.sleep(.5)
         except KeyboardInterrupt:
             logger.info('Disconnecting...')
             iot_client.disconnect()
