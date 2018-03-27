@@ -1,0 +1,4 @@
+{
+    "jobType": "CONTAINER_UPDATE",
+    "containerUrl": "s3://nathgood-examples/version2-container.tar"
+}
