@@ -16,6 +16,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 logging.getLogger("AWSIoTPythonSDK").setLevel(logging.WARNING)
+logging.getLogger("botocore").setLevel(logging.WARNING)
+logging.getLogger("boto3").setLevel(logging.WARNING)
+logging.getLogger("s3transfer").setLevel(logging.WARNING)
 
 # The MQTT topic templates for job management
 NOTIFY_NEXT_TOPIC = "$aws/things/{thing}/jobs/notify-next"
@@ -139,6 +142,8 @@ class JobHandler(object):
 
         s3 = boto3.resource('s3')
         s3.Bucket(bucket_name).download_file(key_name, '/tmp/update.tar')
+
+        # TODO: Update container code here...
         
         logger.info("Finished container update.")
         
