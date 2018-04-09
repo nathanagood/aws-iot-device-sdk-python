@@ -1,0 +1,4 @@
+{
+    "jobType": "APT_UPDATE",
+    "aptPackageName": "cowsay"
+}
