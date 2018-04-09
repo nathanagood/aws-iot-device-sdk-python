@@ -49,7 +49,8 @@ class JobException(Exception):
 
 class JobClient(object):
     """
-    A class for handling jobs.
+    A class for handling jobs. It contains a few convinience methods for adding
+    handlers to handle different job documents.
     """
 
     def __init__(self, client, thing_name):
