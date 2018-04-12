@@ -91,6 +91,35 @@ The above is an example of reporting successful completion of the job. The messa
 
 To make subscribing to the correct topics and updating status easier, this example includes a `JobClient` that provides methods for adding filters and handlers to execute jobs. 
 
+### Getting job details
+
+During job execution, it may be helpful to get job details for development and debugging purposes.
+
+You can get job details by using the AWS IoT console's **Test** console to subscribe to the
+`$aws/things/+/jobs/get/#` topic. After you have subscribed to the topic, publish a blank message to the `$aws/things/<THING NAME/jobs/get` topic, where *\<THING NAME\>* is the name of your IoT thing.
+
+You should see a response on the `$aws/things/<THING NAME/jobs/get/accepted` topic that looks like this:
+
+    {
+      "timestamp": 1523556042,
+      "inProgressJobs": [],
+      "queuedJobs": [
+        {
+          "jobId": "<JOB ID>",
+          "queuedAt": 1523297701,
+          "lastUpdatedAt": 1523297701,
+          "executionNumber": 1,
+          "versionNumber": 1
+        }
+      ]
+    }
+
+For any updates, such as status updates, make sure the *expectedVersion* key in the update message matches the *versionNumber* key in the message above.
+
+### Debugging failed updates
+
+When you issue an update to a job using the `$aws/things/<THING NAME>/jobs/<JOB ID>/update`, messages are sent to the `$aws/things/<THING NAME>/jobs/<JOB ID>/update/accepted` and `$aws/things/<THING NAME>/jobs/<JOB ID>/update/rejected` topics when the update operation is successful or fails, respectively. Subscribing to failed updates by subscribing to the `$aws/things/+/jobs/+/update/#` topic can help you locate the cause of problems if you are having trouble issuing updates to job status.
+
 ### Using the `JobClient` class
 
 The `JobClient` class offers methods to simplify the interaction with the AWS IoT Jobs API. 
