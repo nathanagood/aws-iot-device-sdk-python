@@ -96,7 +96,7 @@ To make subscribing to the correct topics and updating status easier, this examp
 During job execution, it may be helpful to get job details for development and debugging purposes.
 
 You can get job details by using the AWS IoT console's **Test** console to subscribe to the
-`$aws/things/+/jobs/get/#` topic. After you have subscribed to the topic, publish a blank message to the `$aws/things/<THING NAME/jobs/get` topic, where *\<THING NAME\>* is the name of your IoT thing.
+`$aws/things/+/jobs/get/#` topic. After you have subscribed to the topic, publish a blank message to the `$aws/things/<THING NAME>/jobs/get` topic, where *\<THING NAME\>* is the name of your IoT thing.
 
 You should see a response on the `$aws/things/<THING NAME/jobs/get/accepted` topic that looks like this:
 
