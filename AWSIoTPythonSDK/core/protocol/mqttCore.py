@@ -254,7 +254,7 @@ class mqttCore:
         self._log.debug("Custom setting for draining interval: " + str(srcDrainingIntervalSecond) + " sec")
 
     # MQTT connection
-    def connect(self, keepAliveInterval=30):
+    def connect(self, keepAliveInterval=30, lwt=None):
         if keepAliveInterval is None :
             self._log.error("connect: None type inputs detected.")
             raise TypeError("None type inputs detected.")
@@ -278,6 +278,13 @@ class mqttCore:
         else:
             self._pahoClient.tls_set(self._cafile, self._cert, self._key, ssl.CERT_REQUIRED, ssl.PROTOCOL_SSLv23)  # Throw exception...
             self._log.info("Connection type: TLSv1.2 Mutual Authentication")
+
+            # Added the LWT implementation for the MQTT protocol only. According
+            # to the library, this must be set before the connect() method so it's set here if
+            # the lwt value is not None
+            if lwt:
+                self._pahoClient.will_set(lwt.topic(), lwt.payload())
+
         # Connect
         self._pahoClient.connect(self._host, self._port, keepAliveInterval)  # Throw exception...
         self._pahoClient.loop_start()

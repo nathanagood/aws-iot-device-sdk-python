@@ -31,6 +31,33 @@ DROP_NEWEST = 1
 #
 
 
+class LWT:
+    """
+
+    """
+    def __init__(self, topic, payload=None):
+        """
+
+        :param topic:
+        :param payload:
+        """
+        self._topic = topic
+        self._payload = payload
+
+    def payload(self):
+        """
+        Returns the payload for the LWT
+        :return:
+        """
+        return self._payload
+
+    def topic(self):
+        """
+        Returns the topic for the LWT
+        :return:
+        """
+        return self._topic
+
 class AWSIoTMQTTClient:
 
     def __init__(self, clientID, protocolType=MQTTv3_1_1, useWebsocket=False, cleanSession=True):
@@ -326,7 +353,7 @@ class AWSIoTMQTTClient:
         self._mqttCore.setMQTTOperationTimeoutSecond(timeoutSecond)
 
     # MQTT functionality APIs
-    def connect(self, keepAliveIntervalSecond=30):
+    def connect(self, keepAliveIntervalSecond=30, lwt=None):
         """
         **Description**
 
@@ -352,7 +379,7 @@ class AWSIoTMQTTClient:
 
         """
         # mqttCore.connect(keepAliveInterval=30)
-        return self._mqttCore.connect(keepAliveIntervalSecond)
+        return self._mqttCore.connect(keepAliveIntervalSecond, lwt)
 
     def disconnect(self):
         """

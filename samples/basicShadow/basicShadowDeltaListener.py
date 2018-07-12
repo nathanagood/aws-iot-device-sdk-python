@@ -40,8 +40,7 @@ def customShadowCallback_Delta(payload, responseStatus, token):
 	print(responseStatus)
 	payloadDict = json.loads(payload)
 	print("++++++++DELTA++++++++++")
-	print("property: " + str(payloadDict["state"]["property"]))
-	print("version: " + str(payloadDict["version"]))
+	print("shadow: {}".format(payloadDict))
 	print("+++++++++++++++++++++++\n\n")
 
 # Usage
@@ -152,7 +151,7 @@ myAWSIoTMQTTShadowClient.configureMQTTOperationTimeout(5)  # 5 sec
 myAWSIoTMQTTShadowClient.connect()
 
 # Create a deviceShadow with persistent subscription
-Bot = myAWSIoTMQTTShadowClient.createShadowHandlerWithName("Bot", True)
+Bot = myAWSIoTMQTTShadowClient.createShadowHandlerWithName("shadowDevice", True)
 
 # Listen on deltas
 Bot.shadowRegisterDeltaCallback(customShadowCallback_Delta)
